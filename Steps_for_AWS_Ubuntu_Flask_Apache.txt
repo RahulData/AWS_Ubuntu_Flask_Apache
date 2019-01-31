@@ -97,3 +97,5 @@ application.secret_key = 'Add your secret key'
 - - - - - - - - - - - - - - - - - - - - - - - - - 
 systemctl reload apache2
 service apache2 restart 
+
+tail /var/log/apache2/error.log
