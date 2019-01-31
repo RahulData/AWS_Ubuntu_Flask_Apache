@@ -1,0 +1,99 @@
+NOTE THIS SCRIPT WORKS FOR PYTHON3
+
+- Install EC2 Virtual Instance with Ubuntu
+- Install Python, Face_Recognition, Dlib and CMake
+- Install Flask and Apache
+- Creating S3 bucket with Bucket Policy
+- Configure AWS CLI (generate Access Key and Passwd)
+- Copy the Apache Logs and Config Files to S3 bucket
+
+sudo su
+apt-get update
+apt-get install python3-pip
+
+apt-get install apache2
+service apache2 restart 
+
+####apt-get install libapache2-mod-wsgi python-dev (for python2.) ####
+apt-get install libapache2-mod-wsgi-py3
+a2enmod wsgi 
+cd /var/www 
+mkdir FlaskApp
+cd FlaskApp
+mkdir FlaskApp
+cd FlaskApp
+mkdir static templates
+vi __init__.py 
+- - - - - - - - - - - - - - - - - - - - - - - - - 
+from flask import Flask
+app = Flask(__name__)
+@app.route("/")
+def hello():
+	return "Hello, I love AWS - RAHUL !"
+
+@app.route("/faceoff")
+def faceoff():
+        return "Running from One Sub-dir"
+if __name__ == "__main__":
+	app.run()
+- - - - - - - - - - - - - - - - - - - - - - - - - 
+
+pip3 install virtualenv 
+virtualenv venv
+source venv/bin/activate 
+pip3 install Flask 
+python3 __init__.py 
+
+vi /etc/apache2/sites-available/FlaskApp.conf
+- - - - - - - - - - - - - - - - - - - - - - - - - 
+<VirtualHost *:80>
+		ServerName ec2-3-81-54-178.compute-1.amazonaws.com
+		ServerAdmin admin@mywebsite.com
+		WSGIScriptAlias / /var/www/FlaskApp/flaskapp.wsgi
+		<Directory /var/www/FlaskApp/FlaskApp/>
+			Order allow,deny
+			Allow from all
+		</Directory>
+		Alias /static /var/www/FlaskApp/FlaskApp/static
+		<Directory /var/www/FlaskApp/FlaskApp/static/>
+			Order allow,deny
+			Allow from all
+		</Directory>
+		ErrorLog ${APACHE_LOG_DIR}/error.log
+		LogLevel warn
+		CustomLog ${APACHE_LOG_DIR}/access.log combined
+</VirtualHost>
+- - - - - - - - - - - - - - - - - - - - - - - - - 
+
+a2ensite FlaskApp
+cd /var/www/FlaskApp
+vi flaskapp.wsgi 
+- - - - - - - - - - - - - - - - - - - - - - - - - 
+#!/usr/bin/python
+import sys
+import logging
+logging.basicConfig(stream=sys.stderr)
+sys.path.insert(0,"/var/www/FlaskApp/")
+
+from FlaskApp import app as application
+application.secret_key = 'Add your secret key'
+-----CORRECTED CODE BELOW-------------
+#!/usr/bin/python
+import os, sys
+import logging
+logging.basicConfig(stream=sys.stderr)
+sys.path.insert(0,"/var/www/FlaskApp/")
+
+PROJECT_DIR = '/var/www/FlaskApp/FlaskApp/venv'
+
+activate_this = os.path.join(PROJECT_DIR, 'bin', 'activate_this.py')
+#execfile(activate_this, dict(file=activate_this))
+#exec(open(this_file).read(), {'__file__': this_file}))
+exec(open(activate_this).read(), {'__file__': activate_this})
+sys.path.append(PROJECT_DIR)
+
+from FlaskApp import app as application
+application.secret_key = 'Add your secret key'
+- - - - - - - - - - - - - - - - - - - - - - - - - 
+systemctl reload apache2
+service apache2 restart 
